@@ -32,6 +32,13 @@ def parse_arguments():
         action="store_true",
         help="Enable text mode (default: False)",
     )
+    parser.add_argument(
+        "--generate-config",
+        "-c",
+        action="store_true",
+        help="Generate default config '~/.gtoprc' file (default: False)",
+    )
+ 
     return parser.parse_args()
 
 
