@@ -34,7 +34,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--generate-config",
-        "-c",
+        "-g",
         action="store_true",
         help="Generate default config '~/.gtoprc' file (default: False)",
     )

@@ -27,7 +27,7 @@ class Config:
     def load(cls, path: str) -> Config:
         with open(path, "r") as f:
             data = json.load(f)
-        print(f"Loading config from '{path}'.")
+        print(f"Loading configuration from '{path}'.")
         return cls(**data)
 
     @classmethod
@@ -35,7 +35,7 @@ class Config:
         default_cfg = cls()
         with open(path, "w") as f:
             json.dump(asdict(default_cfg), f, indent=4)
-        print(f"Generating default config into '{path}'.")
+        print(f"Generating default configuration '{path}'.")
 
     @classmethod
     def from_parser(
