@@ -22,12 +22,11 @@ class CollectedGpuMetrics:
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"Time={self.timestamp:0.2f}(s)"
-            f", Utilization={self.utilization:0.2f}(%)"
-            f", Memory={self.memory:0.2f}(%)"
-            f", PCI-RX={self.pci_rx:0.2f}(MB/s)"
-            f", PCI-TX={self.pci_tx:0.2f}(MB/s)"
-            # f", Power={self.power_usage:0.2f}(W)"
+            f"Time={self.timestamp:0.2f} [s]"
+            f", UTL={self.utilization:0.2f} [%]"
+            f", MEM={self.memory:0.2f} [%]"
+            f", PCI-RX={self.pci_rx:0.2f} [MB/s]"
+            f", PCI-TX={self.pci_tx:0.2f} [MB/s]"
             ")"
         )
 
@@ -75,13 +74,13 @@ def collect(
     for index, p in enumerate(processes, start=1):
         pid = p.pid
         ps = psutil.Process(pid)
-        mem_used_per_process = p.usedGpuMemory/1024**2
+        mem_used_per_process = p.usedGpuMemory / 1024**2
         if index == 1:
             processes_text = "PID | Username (GPU Memory) | Command\n"
-        processes_text += ( 
-                f"{pid}"
-                f", {ps.username()} ({mem_used_per_process/mem_total * 100:.0f}%)"
-                f", {ps.name()}\n"
+        processes_text += (
+            f"{pid}"
+            f", {ps.username()} ({mem_used_per_process/mem_total * 100:.0f}%)"
+            f", {ps.name()}\n"
         )
 
     return CollectedGpuMetrics(
@@ -96,4 +95,3 @@ def collect(
         temperature=temperature,
         power_usage=power_usage,
     )
-

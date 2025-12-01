@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "gtop"
-version = "0.2.0"
+version = "0.3.0"
 description = "A lightweight CLI tool to monitor GPU status."
 readme = "README.md"
 authors = [{ name = "Hossein Ghorbanfekr", email = "hgh.comphys@gmail.com" }]
@@ -16,7 +16,7 @@ keywords = ["GPU"]
 dependencies = [
 	'nvidia-ml-py>=11.450.129',
 	'plotext>=5.2.8',
-	'psutil >=5.9.8',
+	'psutil>=5.9.8',
 ]
 requires-python = ">=3.8"
 

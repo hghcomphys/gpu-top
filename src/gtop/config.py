@@ -14,6 +14,7 @@ class Config:
     visualizer_plot_size: Optional[tuple[int, int]] = None
     visualizer_plot_theme: Optional[str] = "pro"
     visualizer_plot_marker: Optional[str] = None
+    visualizer_plot_bar: bool = False
 
     @classmethod
     def from_parser(
