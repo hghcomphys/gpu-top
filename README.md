@@ -3,7 +3,7 @@
 <!-- [![PyPI](https://img.shields.io/pypi/v/gtop?label=pypi%20package)](https://pypi.org/project/gtop) -->
 <!-- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) -->
 
-A lightweight CLI tool to monitor GPU status.
+A lightweight command line tool to monitor GPU status.
 
 <!--
 ## Motivation
@@ -47,12 +47,26 @@ A screenshot of `gtop` in action is shown below:
 Text mode can be enabled via `--text-mode` or `-t` flag:
 ```bash
 $ gtop -t
-CollectedMetrics(Time=0.10(s), Process=0.00(%), Memory=2.31(%), PCI-RX=0.00(MB/s), PCI-TX=0.00(MB/s))
-CollectedMetrics(Time=1.13(s), Process=0.00(%), Memory=2.31(%), PCI-RX=0.00(MB/s), PCI-TX=0.00(MB/s))
+CollectedMetrics(Time=0.10 [s], Process=0.00 [%], Memory=2.31 [%], PCI-RX=0.00 [MB/s], PCI-TX=0.00 [MB/s])
+CollectedMetrics(Time=1.13 [s], Process=0.00 [%], Memory=2.31 [%], PCI-RX=0.00 [MB/s], PCI-TX=0.00 [MB/s])
 ...
-CollectedMetrics(Time=10.14(s), Process=100.00(%), Memory=3.74(%),  PCI-RX=42.37(MB/s), PCI-TX=0.01(MB/s))
-CollectedMetrics(Time=11.18(s),  Process=100.00(%), Memory=3.74(%), PCI-RX=0.03(MB/s), PCI-TX=11.02(MB/s))
+CollectedMetrics(Time=10.14 [s], Process=100.00 [%], Memory=3.74 [%], PCI-RX=42.37 [MB/s], PCI-TX=0.01  [MB/s])
+CollectedMetrics(Time=11.18 [s], Process=100.00 [%], Memory=3.74 [%], PCI-RX= 0.03 [MB/s], PCI-TX=11.02 [MB/s])
 ```
+
+### Configuration 
+Running `gtop --generate-config` or `gtop -g` will automatically generate a default configuration file at:
+```bash
+$ gtop -g
+Generating default configuration '~/.gtoprc'.
+```
+
+Once this file exists, you can edit it to customize how `gtop` behaves or displays system metrics.
+For example, to switch from the default timeline plot to a bar plot, update `visualizer_plot_bar` to `true`.
+After saving, `gtop` graphs will appear as bar plots instead of time-based line plots.
+
+Note: If you remove `~/.gtoprc`, gtop will automatically fall back to the default configuration.
+
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

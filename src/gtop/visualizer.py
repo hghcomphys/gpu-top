@@ -4,6 +4,7 @@ from typing import Any
 import plotext
 from gtop.collector import CollectedGpuMetrics, CollectedGpuMetricsBuffer
 from gtop.config import Config
+import os
 
 PlotHandle = Any
 
@@ -22,19 +23,27 @@ class PlotextVisualizer:
         plt = self.plt
         plt.clt()
         plt.cld()
-        plt.plotsize(cfg.visualizer_plot_size)
+        (
+            plt.plotsize(*os.get_terminal_size())
+            if cfg.visualizer_plot_size is None
+            else plt.plotsize(cfg.visualizer_plot_size)
+        )
         plt.theme(cfg.visualizer_plot_theme)
         plt.subplots(2, 2)
         plt.subplot(1, 1)
         self._show_gpu_info(inputs.last, plt, cfg)
         plt.subplot(1, 2)
-        self._plot_utilization(inputs, plt, cfg)
-        # self._bar_plot_utilization(inputs.last, plt)
+        if cfg.visualizer_plot_bar:
+            self._bar_plot_utilization(inputs.last, plt)
+        else:
+            self._plot_utilization(inputs, plt, cfg)
         plt.subplot(2, 1)
         self._show_processes(inputs.last, plt)
         plt.subplot(2, 2)
-        self._plot_pci_throughput(inputs, plt, cfg)
-        # self._bar_plot_pci_throughput(inputs.last, plt)
+        if cfg.visualizer_plot_bar:
+            self._bar_plot_pci_throughput(inputs.last, plt)
+        else:
+            self._plot_pci_throughput(inputs, plt, cfg)
         plt.show()
 
     @classmethod
@@ -46,15 +55,17 @@ class PlotextVisualizer:
     ) -> None:
         gpu_info = (
             (
-                f"{metrics.name} (Device {cfg.device_gpu_index})"
-                f"\nTotal Memory: {metrics.memory_total:0.0f} (MB)"
+                f"Device {cfg.device_gpu_index}: [{metrics.name}]"
+                f"\nTotal Memory: {metrics.memory_total:0.0f} [MB]"
             )
             + (
-                f"\nPower Usage: {metrics.power_usage:0.1f} (W)"
+                f"\nPower Usage: {metrics.power_usage:0.1f} [W]"
                 if metrics.power_usage is not None
                 else ""
             )
-            + (f"\nTemperature: {metrics.temperature:0.1f} (°C)")
+            + (f"\nTemperature: {metrics.temperature:0.1f} [°C]")
+            + (f"\nUtilization: {metrics.utilization:0.2f} [%]")
+            + (f"\nMemory: {metrics.memory:0.2f} [%]")
         )
         plt.text(gpu_info, 0, 1)
         plt.xticks([])
@@ -71,7 +82,7 @@ class PlotextVisualizer:
         plt: PlotHandle,
     ) -> None:
         processes = (
-            metrics.processes if metrics.processes else "[No Compute Running Processes]"
+            metrics.processes if metrics.processes else "No Compute Running Processes"
         )
         plt.text(processes, 0, 1)
         plt.xticks([])
