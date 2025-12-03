@@ -1,4 +1,4 @@
-# GPU Monitoring Tool
+# GPU top
 
 <!-- [![PyPI](https://img.shields.io/pypi/v/gtop?label=pypi%20package)](https://pypi.org/project/gtop) -->
 <!-- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) -->
@@ -19,29 +19,30 @@ The following features are planned for this tool:
 
 [x] Basic metrics like GPU utilization, memory usage, PCI throughput
 [x] Targeting Nvidia GPUs, with potential extension to AMD GPUs
-* A table of GPU processes
-* User-level customization 
+[x] A table of GPU processes
+[x] User-level customization 
 * Lightweight and minimal
 * Multiple GPU support 
 -->
 
 ## Installation
-To install `gtop`, run the following command:
+To install `gpu-top`, run the following command:
 ```bash
-pip install --user git+https://github.com/hghcomphys/gpu-monitoring-tool.git
+pip install --user git+https://github.com/hghcomphys/gpu-top.git
 ```
-This will install required dependencies and add `gtop` to your user-specific executable path (`~/.local/bin`). 
+This will install required dependencies and add `gtop` command to your user-specific PATH (`~/.local/bin`). 
 You can then run `gtop` directly.
 
-To uninstall `gtop`, use the following command:
+To uninstall, use the following command:
 ```bash
-pip uninstall gtop
+pip uninstall gpu-top
 ```
 
-## Example
+## Usage
 A screenshot of `gtop` in action is shown below:
 
 <img src="docs/images/screenshot.png" alt="demo screemshot" width="700"/>
+
 
 ### Text-mode
 Text mode can be enabled via `--text-mode` or `-t` flag:
