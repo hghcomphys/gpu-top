@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project]
-name = "gtop-top"
+name = "gpu-top"
 version = "0.3.0"
 description = "A lightweight CLI tool to monitor GPU status."
 readme = "README.md"
