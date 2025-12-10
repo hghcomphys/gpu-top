@@ -9,7 +9,7 @@ A lightweight command line tool to monitor GPU status.
 ## Motivation
 Current GPU monitoring tools often fall short in two ways:
 
-* Inflexible metric selection: users should be able to customize which metrics they need to measure, rather than being limited to predefined sets.
+* Inflexible metric selection: users should be able to customize which metrics they need to collect, rather than being limited to predefined sets.
 * No PCI throughput metrics: RX and TX metrics are important, as data transfer between CPU and GPU is frequently the computational bottleneck.
 -->
 

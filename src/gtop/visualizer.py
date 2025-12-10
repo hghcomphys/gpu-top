@@ -1,10 +1,14 @@
 from __future__ import annotations
+
+import os
 from dataclasses import dataclass
 from typing import Any
+
 import plotext
-from gtop.collector import CollectedGpuMetrics, CollectedGpuMetricsBuffer
+
+from gtop.buffer import Buffer
 from gtop.config import Config
-import os
+from gtop.metrics import GpuMetrics
 
 PlotHandle = Any
 
@@ -15,41 +19,67 @@ class PlotextVisualizer:
 
     def show(
         self,
-        inputs: CollectedGpuMetricsBuffer,
+        inputs: Buffer,
         cfg: Config,
     ) -> None:
-        if len(inputs.buffer) < 2:
+        if len(inputs) < 2:
             return
+
         plt = self.plt
         plt.clt()
         plt.cld()
-        (
-            plt.plotsize(*os.get_terminal_size())
-            if cfg.visualizer_plot_size is None
-            else plt.plotsize(cfg.visualizer_plot_size)
-        )
+        # (
+        #     plt.plotsize(*os.get_terminal_size())
+        #     if cfg.visualizer_plot_size is None
+        #     else plt.plotsize(cfg.visualizer_plot_size)
+        # )
         plt.theme(cfg.visualizer_plot_theme)
-        plt.subplots(2, 2)
-        plt.subplot(1, 1)
-        self._show_gpu_info(inputs.last, plt, cfg)
-        plt.subplot(1, 2)
-        if cfg.visualizer_plot_bar:
-            self._bar_plot_utilization(inputs.last, plt)
-        else:
-            self._plot_utilization(inputs, plt, cfg)
-        plt.subplot(2, 1)
-        self._show_processes(inputs.last, plt)
-        plt.subplot(2, 2)
-        if cfg.visualizer_plot_bar:
-            self._bar_plot_pci_throughput(inputs.last, plt)
-        else:
-            self._plot_pci_throughput(inputs, plt, cfg)
-        plt.show()
+        plt.plotsize(120, 3)
+
+        metrics = inputs.last     
+        items = (
+            ("utilization", "UTL%"),
+            ("memory_used", "MEM%"),
+            ("pci_tx", "TX(MB/s)"),
+            ("pci_rx", "RX(MB/s)"),
+        )
+        for gpu in metrics:
+            print(f"GPU {gpu.device_index}: {gpu.name}")
+            plt.subplots(1, len(items))
+            for index, (metric, label) in enumerate(items):
+                plt.subplot(1, index+1)
+                plt.bar(
+                    [label],
+                    [getattr(gpu, metric)],
+                    orientation="h",
+                    width=2,
+                )
+                if label in ("UTL%", "MEM%"):
+                    plt.xlim(0, 100)
+                plt.xticks([])
+            plt.show()
+
+        # plt.subplots(2, 2)
+        # plt.subplot(1, 1)
+        # self._show_gpu_info(inputs.last, plt, cfg)
+        # plt.subplot(1, 2)
+        # if cfg.visualizer_plot_bar:
+        #     self._bar_plot_utilization(inputs.last, plt)
+        # else:
+        #     self._plot_utilization(inputs, plt, cfg)
+        # plt.subplot(2, 1)
+        # self._show_processes(inputs.last, plt)
+        # plt.subplot(2, 2)
+        # if cfg.visualizer_plot_bar:
+        #     self._bar_plot_pci_throughput(inputs.last, plt)
+        # else:
+        #     self._plot_pci_throughput(inputs, plt, cfg)
+        # plt.show()
 
     @classmethod
     def _show_gpu_info(
         cls,
-        metrics: CollectedGpuMetrics,
+        metrics: GpuMetrics,
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
@@ -78,7 +108,7 @@ class PlotextVisualizer:
     @classmethod
     def _show_processes(
         cls,
-        metrics: CollectedGpuMetrics,
+        metrics: GpuMetrics,
         plt: PlotHandle,
     ) -> None:
         processes = (
@@ -95,7 +125,7 @@ class PlotextVisualizer:
     @classmethod
     def _bar_plot_pci_throughput(
         cls,
-        metrics: CollectedGpuMetrics,
+        metrics: GpuMetrics,
         plt: PlotHandle,
     ) -> None:
         names = [
@@ -118,7 +148,7 @@ class PlotextVisualizer:
     @classmethod
     def _bar_plot_utilization(
         cls,
-        metrics: CollectedGpuMetrics,
+        metrics: GpuMetrics,
         plt: PlotHandle,
     ) -> None:
         names = [
@@ -126,7 +156,7 @@ class PlotextVisualizer:
             "Utilization",
         ]
         values = [
-            metrics.memory,
+            metrics.memory_used,
             metrics.utilization,
         ]
         plt.bar(
@@ -141,7 +171,7 @@ class PlotextVisualizer:
     @classmethod
     def _plot_pci_throughput(
         cls,
-        inputs: CollectedGpuMetricsBuffer,
+        inputs: GpuMetricsBuffer,
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
@@ -171,7 +201,7 @@ class PlotextVisualizer:
     @classmethod
     def _plot_utilization(
         cls,
-        inputs: CollectedGpuMetricsBuffer,
+        inputs: GpuMetricsBuffer,
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
@@ -214,6 +244,6 @@ class PlotextVisualizer:
 
 
 def textmode_show(
-    inputs: CollectedGpuMetricsBuffer,
+    inputs: GpuMetricsBuffer,
 ) -> None:
     print(inputs.last)
