@@ -6,7 +6,7 @@ from gtop.buffer import Buffer
 from gtop.config import Config
 from gtop.device import free_devices, get_devices
 from gtop.metrics import GpuMetrics
-from gtop.visualizer import PlotextVisualizer
+from gtop.visualizer import PlotextVisualizer, textmode_show
 
 
 def app(
@@ -20,19 +20,14 @@ def app(
     while not stop_event.is_set():
         all_device_metrics = GpuMetrics.collect(handles, start_time, cfg)
         buffer.append(all_device_metrics)
-        visualizer.show(buffer, cfg)
-
-        # for index, handle in enumerate(handles): 
-        #     print(f"GPU {index}", metrics)
-        # if len(handles) > 1:
-        #     print()
-        # if cfg.text_mode:
-        #     textmode_show(buffer)
-        # else:
-        #     visualizer.show(buffer, cfg)
+        if cfg.text_mode:
+            textmode_show(buffer)
+        else:
+            visualizer.show(buffer, cfg)
         if len(buffer) > 1:
             if stop_event.wait(cfg.update_time_interval):
                 break
+
 
 def main():
     cfg = Config.from_parser(args=parse_arguments())
@@ -50,7 +45,6 @@ def main():
     finally:
         thread.join()
         free_devices()
-
 
 
 def parse_arguments():
@@ -85,7 +79,6 @@ def parse_arguments():
     )
 
     return parser.parse_args()
-
 
 
 if __name__ == "__main__":

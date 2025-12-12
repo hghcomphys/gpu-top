@@ -10,6 +10,7 @@ from gtop.buffer import Buffer
 from gtop.config import Config
 from gtop.metrics import GpuMetrics
 
+
 PlotHandle = Any
 
 
@@ -34,47 +35,164 @@ class PlotextVisualizer:
         #     else plt.plotsize(cfg.visualizer_plot_size)
         # )
         plt.theme(cfg.visualizer_plot_theme)
-        plt.plotsize(120, 3)
 
-        metrics = inputs.last     
-        items = (
-            ("utilization", "UTL%"),
-            ("memory_used", "MEM%"),
-            ("pci_tx", "TX(MB/s)"),
-            ("pci_rx", "RX(MB/s)"),
-        )
-        for gpu in metrics:
-            print(f"GPU {gpu.device_index}: {gpu.name}")
-            plt.subplots(1, len(items))
-            for index, (metric, label) in enumerate(items):
-                plt.subplot(1, index+1)
-                plt.bar(
-                    [label],
-                    [getattr(gpu, metric)],
-                    orientation="h",
-                    width=2,
-                )
-                if label in ("UTL%", "MEM%"):
-                    plt.xlim(0, 100)
-                plt.xticks([])
-            plt.show()
+        # plt.plotsize(120, 3)
+        # metrics = inputs.last
+        # items = (
+        #     ("utilization", "UTL%"),
+        #     ("memory_used", "MEM%"),
+        #     ("pci_tx", "TX(MB/s)"),
+        #     ("pci_rx", "RX(MB/s)"),
+        # )
+        # for gpu in metrics:
+        #     print(f"GPU {gpu.device_index}: {gpu.name}")
+        #     plt.subplots(1, len(items))
+        #     for index, (metric, label) in enumerate(items):
+        #         plt.subplot(1, index+1)
+        #         plt.bar(
+        #             [label],
+        #             [getattr(gpu, metric)],
+        #             orientation="h",
+        #             width=2,
+        #             marker="|"
+        #         )
+        #         if label in ("UTL%", "MEM%"):
+        #             plt.xlim(0, 100)
+        #         plt.xticks([])
+        #     plt.show()
 
-        # plt.subplots(2, 2)
-        # plt.subplot(1, 1)
-        # self._show_gpu_info(inputs.last, plt, cfg)
-        # plt.subplot(1, 2)
-        # if cfg.visualizer_plot_bar:
-        #     self._bar_plot_utilization(inputs.last, plt)
-        # else:
-        #     self._plot_utilization(inputs, plt, cfg)
-        # plt.subplot(2, 1)
+        plt.subplots(1, 2)
+        plt.plotsize(100, 10)
+        plt.subplot(1, 1)
+        if cfg.visualizer_plot_bar:
+            self._bar_plot_utilization(inputs.last, plt, cfg)
+        else:
+            self._plot_utilization(inputs, plt, cfg)
+        plt.subplot(1, 2)
+        if cfg.visualizer_plot_bar:
+            self._bar_plot_pci_throughput(inputs.last, plt, cfg)
+        else:
+            self._plot_pci_throughput(inputs, plt, cfg)
+        plt.show()
+        # ---
+        plt.subplots(1, 1)
+        plt.plotsize(100, 15)
+        plt.subplot(1, 1)
+        self._show_gpu_info(inputs.last, plt, cfg)
         # self._show_processes(inputs.last, plt)
-        # plt.subplot(2, 2)
-        # if cfg.visualizer_plot_bar:
-        #     self._bar_plot_pci_throughput(inputs.last, plt)
-        # else:
-        #     self._plot_pci_throughput(inputs, plt, cfg)
-        # plt.show()
+        plt.show()
+
+    @classmethod
+    def _plot_utilization(
+        cls,
+        inputs: Buffer,
+        plt: PlotHandle,
+        cfg: Config,
+    ) -> None:
+        timestamps = cls.get_shifted_timestamps(
+            [input[cfg.device_gpu_index].timestamp for input in inputs],
+            cfg,
+        )
+        utilization_values = [
+            input[cfg.device_gpu_index].utilization for input in inputs
+        ]
+        memory_values = [input[cfg.device_gpu_index].memory_used for input in inputs]
+        plt.plot(
+            timestamps,
+            utilization_values,
+            label="UTL",
+            marker=cfg.visualizer_plot_marker,
+        )
+        plt.plot(
+            timestamps,
+            memory_values,
+            label="MEM",
+            marker=cfg.visualizer_plot_marker,
+        )
+        # plt.title("GPU Utilization")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Utilization (%)")
+        plt.ylim(0, 100)
+        plt.xlim(-cfg.visualizer_plot_time_interval, 0)
+
+    @classmethod
+    def _plot_pci_throughput(
+        cls,
+        inputs: Buffer,
+        plt: PlotHandle,
+        cfg: Config,
+    ) -> None:
+        timestamps = cls.get_shifted_timestamps(
+            [input[cfg.device_gpu_index].timestamp for input in inputs], cfg
+        )
+        pci_rx_values = [input[cfg.device_gpu_index].pci_rx for input in inputs]
+        pci_tx_values = [input[cfg.device_gpu_index].pci_tx for input in inputs]
+        plt.plot(
+            timestamps,
+            pci_rx_values,
+            label="RX",
+            marker=cfg.visualizer_plot_marker,
+        )
+        plt.plot(
+            timestamps,
+            pci_tx_values,
+            label="TX",
+            marker=cfg.visualizer_plot_marker,
+        )
+        plt.xlabel("Time (s)")
+        plt.ylabel("PCI Throughput (MB/s)")
+        plt.ylim(0, max(1, max(pci_tx_values + pci_rx_values) * 1.2))
+        plt.xlim(-cfg.visualizer_plot_time_interval, 0)
+
+    @classmethod
+    def _bar_plot_utilization(
+        cls,
+        metrics: GpuMetrics,
+        plt: PlotHandle,
+        cfg: Config,
+    ) -> None:
+        metrics = metrics[cfg.device_gpu_index]
+        names = [
+            "MEM",
+            "UTL",
+        ]
+        values = [
+            metrics.memory_used,
+            metrics.utilization,
+        ]
+        plt.bar(
+            names,
+            values,
+            orientation="h",
+            width=2 / 5,
+        )
+        plt.ylabel("GPU Utilization (%)")
+        plt.xlim(0, 100)
+
+    @classmethod
+    def _bar_plot_pci_throughput(
+        cls,
+        metrics: GpuMetrics,
+        plt: PlotHandle,
+        cfg: Config,
+    ) -> None:
+        metrics = metrics[cfg.device_gpu_index]
+        names = [
+            "TX",
+            "RX",
+        ]
+        values = [
+            metrics.pci_tx,
+            metrics.pci_rx,
+        ]
+        plt.bar(
+            names,
+            values,
+            orientation="h",
+            width=2 / 5,
+        )
+        plt.ylabel("PCI Throughput (MB/s)")
+        plt.xlim(0, max(1, max(metrics.pci_tx, metrics.pci_rx) * 1.2))
 
     @classmethod
     def _show_gpu_info(
@@ -83,6 +201,7 @@ class PlotextVisualizer:
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
+        metrics = metrics[cfg.device_gpu_index]
         gpu_info = (
             (
                 f"Device {cfg.device_gpu_index}: [{metrics.name}]"
@@ -95,7 +214,7 @@ class PlotextVisualizer:
             )
             + (f"\nTemperature: {metrics.temperature:0.1f} [°C]")
             + (f"\nUtilization: {metrics.utilization:0.2f} [%]")
-            + (f"\nMemory: {metrics.memory:0.2f} [%]")
+            + (f"\nMemory: {metrics.memory_used:0.2f} [%]")
         )
         plt.text(gpu_info, 0, 1)
         plt.xticks([])
@@ -110,7 +229,9 @@ class PlotextVisualizer:
         cls,
         metrics: GpuMetrics,
         plt: PlotHandle,
+        cfg: Config,
     ) -> None:
+        metrics = metrics[cfg.device_gpu_index]
         processes = (
             metrics.processes if metrics.processes else "No Compute Running Processes"
         )
@@ -121,112 +242,6 @@ class PlotextVisualizer:
         plt.title("GPU Processes")
         # plt.xaxes(False, False)
         # plt.yaxes(False, False)
-
-    @classmethod
-    def _bar_plot_pci_throughput(
-        cls,
-        metrics: GpuMetrics,
-        plt: PlotHandle,
-    ) -> None:
-        names = [
-            "PCI-TX",
-            "PCI-RX",
-        ]
-        values = [
-            metrics.pci_rx,
-            metrics.pci_tx,
-        ]
-        plt.bar(
-            names,
-            values,
-            orientation="h",
-            width=2 / 5,
-        )
-        plt.title("GPU PCIe Throughput (MB/s)")
-        plt.xlim(0, max(1, max(metrics.pci_tx, metrics.pci_rx) * 1.2))
-
-    @classmethod
-    def _bar_plot_utilization(
-        cls,
-        metrics: GpuMetrics,
-        plt: PlotHandle,
-    ) -> None:
-        names = [
-            "Memory",
-            "Utilization",
-        ]
-        values = [
-            metrics.memory_used,
-            metrics.utilization,
-        ]
-        plt.bar(
-            names,
-            values,
-            orientation="h",
-            width=2 / 5,
-        )
-        plt.title("GPU Utilization (%)")
-        plt.xlim(0, 100)
-
-    @classmethod
-    def _plot_pci_throughput(
-        cls,
-        inputs: GpuMetricsBuffer,
-        plt: PlotHandle,
-        cfg: Config,
-    ) -> None:
-        timestamps = cls.get_shifted_timestamps(
-            [input.timestamp for input in inputs], cfg
-        )
-        pci_rx_values = [input.pci_rx for input in inputs]
-        pci_tx_values = [input.pci_tx for input in inputs]
-        plt.plot(
-            timestamps,
-            pci_rx_values,
-            label="PCI-RX",
-            marker=cfg.visualizer_plot_marker,
-        )
-        plt.plot(
-            timestamps,
-            pci_tx_values,
-            label="PCI-TX",
-            marker=cfg.visualizer_plot_marker,
-        )
-        plt.title("GPU PCIe Throughput")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Throughput (MB/s)")
-        plt.ylim(0, max(1, max(pci_tx_values + pci_rx_values) * 1.2))
-        plt.xlim(-cfg.visualizer_plot_time_interval, 0)
-
-    @classmethod
-    def _plot_utilization(
-        cls,
-        inputs: GpuMetricsBuffer,
-        plt: PlotHandle,
-        cfg: Config,
-    ) -> None:
-        timestamps = cls.get_shifted_timestamps(
-            [input.timestamp for input in inputs], cfg
-        )
-        utilization_values = [input.utilization for input in inputs]
-        memory_values = [input.memory for input in inputs]
-        plt.plot(
-            timestamps,
-            utilization_values,
-            label="Utilization",
-            marker=cfg.visualizer_plot_marker,
-        )
-        plt.plot(
-            timestamps,
-            memory_values,
-            label="Memory",
-            marker=cfg.visualizer_plot_marker,
-        )
-        # plt.title("GPU Utilization")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Utilization (%)")
-        plt.ylim(0, 100)
-        plt.xlim(-cfg.visualizer_plot_time_interval, 0)
 
     @classmethod
     def get_shifted_timestamps(
@@ -244,6 +259,6 @@ class PlotextVisualizer:
 
 
 def textmode_show(
-    inputs: GpuMetricsBuffer,
+    inputs: Buffer,
 ) -> None:
     print(inputs.last)
