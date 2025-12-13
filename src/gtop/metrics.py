@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence, Tuple
+from typing import Any, Protocol, Tuple
 
+import psutil
 import pynvml
 
 from gtop.config import Config
@@ -26,7 +27,7 @@ class GpuMetrics:
     memory_total: float
     temperature: float
     power_usage: float
-    # processes: str
+    processes: str
 
     @classmethod
     def collect(
@@ -44,24 +45,13 @@ class GpuMetrics:
             mem_used, mem_total = GpuMemoryMetric(handle).collect()
             temperature = GpuTemperatureMetric(handle).collect()
             power_usage = GpuPowerUsageMetric(handle).collect()
-            # processes = metrics.processes.collect()
-            # processes_text = ""
-            # for index, p in enumerate(processes, start=1):
-            #     pid = p.pid
-            #     ps = psutil.Process(pid)
-            #     mem_used_per_process = p.usedGpuMemory / 1024**2
-            #     if index == 1:
-            #         processes_text = "PID | Username (GPU Memory) | Command\n"
-            #     processes_text += (
-            #         f"{pid}"
-            #         f", {ps.username()} ({mem_used_per_process/mem_total * 100:.0f}%)"
-            #         f", {ps.name()}\n"
-            #     )
+            processes = GpuComputeRunningProcesses(handle).collect()
+
             all_device_metrics.append(
                 GpuMetrics(
                     name=gpu_name,
                     device_index=index, 
-                    timestamp=max(now, cfg.collector_min_time_interval),
+                    timestamp=max(now, cfg.min_time_interval),
                     pci_tx=tx,
                     pci_rx=rx,
                     utilization=utilization,
@@ -69,15 +59,17 @@ class GpuMetrics:
                     memory_total=mem_total,
                     temperature=temperature,
                     power_usage=power_usage,
-                    # processes=processes_text,
+                    processes=processes,
                 )
             )
         return tuple(all_device_metrics)
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}("
-            f"Time={self.timestamp:0.2f} [s]"
+            f"{self.__class__.__name__}"
+            "("
+            f"Device={self.device_index}"
+            f", Time={self.timestamp:0.2f} [s]"
             f", UTL={self.utilization:0.2f} [%]"
             f", MEM={self.memory_used:0.2f} [%]"
             f", PCI-RX={self.pci_rx:0.2f} [MB/s]"
@@ -94,8 +86,22 @@ class MetricInterface(Protocol):
 class GpuComputeRunningProcesses(MetricInterface):
     handle: DeviceHandle
 
-    def collect(self) -> Sequence:
-        return pynvml.nvmlDeviceGetComputeRunningProcesses(self.handle)
+    def collect(self) -> str:
+        processes = pynvml.nvmlDeviceGetComputeRunningProcesses(self.handle)
+        processes_text = ""
+        for index, p in enumerate(processes, start=1):
+            pid = p.pid
+            ps = psutil.Process(pid)
+            mem_used_per_process = p.usedGpuMemory / 1024**2
+            if index == 1:
+                processes_text = "PID | Username | Command\n"
+            processes_text += (
+                f"{pid}"
+                f", {ps.username()}"
+                # "({mem_used_per_process/p.memory_total * 100:.0f}%)"
+                f", {ps.name()}\n"
+            )
+        return processes_text 
 
 
 @dataclass

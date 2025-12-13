@@ -6,24 +6,21 @@ from gtop.buffer import Buffer
 from gtop.config import Config
 from gtop.device import free_devices, get_devices
 from gtop.metrics import GpuMetrics
-from gtop.visualizer import PlotextVisualizer, textmode_show
+from gtop.dashboard import Dashboard
 
 
 def app(
     cfg: Config,
     stop_event: threading.Event,
 ) -> None:
-    buffer = Buffer(max_size=cfg.collector_buffer_size)
-    visualizer = PlotextVisualizer()
+    buffer = Buffer(max_size=cfg.buffer_size)
+    visualizer = Dashboard()
     handles = get_devices()
     start_time = time.time()
     while not stop_event.is_set():
         all_device_metrics = GpuMetrics.collect(handles, start_time, cfg)
         buffer.append(all_device_metrics)
-        if cfg.text_mode:
-            textmode_show(buffer)
-        else:
-            visualizer.show(buffer, cfg)
+        visualizer.show(buffer, cfg)
         if len(buffer) > 1:
             if stop_event.wait(cfg.update_time_interval):
                 break
@@ -52,7 +49,7 @@ def parse_arguments():
         description="A basic CLI tool to Monitor GPU status."
     )
     parser.add_argument(
-        "--device-gpu-index",
+        "--device-index",
         "-d",
         type=int,
         default=0,
