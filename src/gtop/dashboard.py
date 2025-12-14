@@ -35,9 +35,10 @@ class Dashboard:
         plt.cld()
         plt.theme(cfg.dashboard_theme)
         terminal_size = os.get_terminal_size()
+        # num_processes = len(inputs.last[cfg.device_index].processes) 
 
-        self._show_gpu_info(inputs.last, cfg)
         plt.subplots(1, 2)
+        self._show_device_info(inputs.last, plt, cfg)
         plt.plotsize(terminal_size[0], terminal_size[1] // 2)
         plt.subplot(1, 1)
         if cfg.dashboard_plot_bar:
@@ -52,7 +53,7 @@ class Dashboard:
         plt.show()
         # ---
         plt.subplots(1, 1)
-        plt.plotsize(terminal_size[0], terminal_size[1] // 2 - 1)
+        plt.plotsize(terminal_size[0], terminal_size[1] // 2 - 2)
         plt.subplot(1, 1)
         self._show_processes(inputs.last, plt, cfg)
         plt.show()
@@ -68,10 +69,11 @@ class Dashboard:
             [input[cfg.device_index].timestamp for input in inputs],
             cfg,
         )
-        utilization_values = [
-            input[cfg.device_index].utilization for input in inputs
+        utilization_values = [input[cfg.device_index].utilization for input in inputs]
+        memory_values = [
+            input[cfg.device_index].memory_used_percent
+            for input in inputs
         ]
-        memory_values = [input[cfg.device_index].memory_used for input in inputs]
         plt.plot(
             timestamps,
             utilization_values,
@@ -84,7 +86,6 @@ class Dashboard:
             label="MEM",
             marker=cfg.dashboard_plot_marker,
         )
-        # plt.title("GPU Utilization")
         plt.xlabel("Time (s)")
         plt.ylabel("Utilization (%)")
         plt.ylim(0, 100)
@@ -122,17 +123,17 @@ class Dashboard:
     @classmethod
     def _bar_plot_utilization(
         cls,
-        metrics: Tuple[GpuMetrics, ...],
+        all_device_metrics: Tuple[GpuMetrics, ...],
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
-        metrics = metrics[cfg.device_index]
+        metrics = all_device_metrics[cfg.device_index]
         names = [
             "MEM",
             "UTL",
         ]
         values = [
-            metrics.memory_used,
+            metrics.memory_used_percent,
             metrics.utilization,
         ]
         plt.bar(
@@ -148,11 +149,11 @@ class Dashboard:
     @classmethod
     def _bar_plot_pci_throughput(
         cls,
-        metrics: Tuple[GpuMetrics, ...],
+        all_device_metrics: Tuple[GpuMetrics, ...],
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
-        metrics = metrics[cfg.device_index]
+        metrics = all_device_metrics[cfg.device_index]
         names = [
             "TX",
             "RX",
@@ -172,46 +173,64 @@ class Dashboard:
         plt.xlim(0, max(1, max(metrics.pci_tx, metrics.pci_rx) * 1.2))
 
     @classmethod
-    def _show_gpu_info(
+    def _show_device_info(
         cls,
-        metrics: GpuMetrics,
+        all_device_metrics: Tuple[GpuMetrics, ...],
+        plt: PlotHandle,
         cfg: Config,
     ) -> None:
-        metrics = metrics[cfg.device_index]
-        gpu_info = (
+        metrics = all_device_metrics[cfg.device_index]
+        device_info = (
             (
                 f"[{cfg.device_index}] {metrics.name}"
-                f" | MEM: {metrics.memory_total:0.0f} [MB]"
+                f" | VRAM: {metrics.memory_total:0.0f} MB"
             )
             + (
-                f" | PWR: {metrics.power_usage:0.1f} [W]"
+                f" | PWR: {metrics.power_usage:0.1f} Watts"
                 if metrics.power_usage > 0
                 else ""
             )
-            + (f" | T: {metrics.temperature:0.1f} [°C]")
-            # + (f"| UTL: {metrics.utilization:0.2f} [%]")
-            # + (f"| MEM: {metrics.memory_used:0.2f} [%]")
+            + (f" | TEMP: {metrics.temperature:0.1f} °C")
+            # + (f" | UTL: {metrics.utilization:0.2f} [%]")
+            # + (f" | MEM: {metrics.memory_used:0.2f} [%]")
         )
-        print(gpu_info)
+        # plt.title(device_info)
+        print(device_info)
 
     @classmethod
     def _show_processes(
         cls,
-        metrics: Tuple[GpuMetrics, ...],
+        all_device_metrics: Tuple[GpuMetrics, ...],
         plt: PlotHandle,
         cfg: Config,
     ) -> None:
-        metrics = metrics[cfg.device_index]
-        processes = (
-            metrics.processes if metrics.processes else "No Compute Running Processes"
+        metrics = all_device_metrics[cfg.device_index]
+        processes_str = (
+            f"{'PID':<10}"
+            f" {'DEV':<5}"
+            f" {'USER':<10}"
+            f" {'MEM[MB]':<10}"
+            f" {'CPU[%]':<10}"
+            f" {'H-MEM[MB]':<10}"
+            f" {'CMD':<40}"
+            "\n"
         )
-        plt.text(processes, 0, 1)
+        for p in metrics.processes:
+            processes_str += (
+                f"{p.pid:<10}"
+                f" {p.device:<5}"
+                f" {p.user:<10}"
+                f" {p.memory:<10.0f}"
+                f" {p.cpu_usage:<10.0f}"
+                f" {p.host_memory:<10.0f}"
+                f" {p.command:<40}"
+                "\n"
+            )
+        plt.text(processes_str, 0, 1)
         plt.xticks([])
         plt.yticks([])
         plt.ylim(0, 1)
-        plt.title("GPU Processes")
-        # plt.xaxes(False, False)
-        # plt.yaxes(False, False)
+        plt.yaxes(False, False)
 
     @classmethod
     def get_shifted_timestamps(
@@ -220,8 +239,7 @@ class Dashboard:
         cfg: Config,
     ) -> list[float]:
         timestamps = [
-            time - timestamps[0] - cfg.plot_time_interval
-            for time in timestamps
+            time - timestamps[0] - cfg.plot_time_interval for time in timestamps
         ]
         if len(timestamps) < cfg.buffer_size:
             timestamps = [time - timestamps[-1] for time in timestamps]

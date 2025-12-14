@@ -12,7 +12,9 @@ from gtop.device import DeviceHandle
 
 MILLIWATTS_TO_WATTS = 0.001
 KB_TO_MB = 1.0 / 1024
-KB_TO_GB = (1.0 / 1024)**2
+KB_TO_GB = (1.0 / 1024) ** 2
+B_TO_MB = (1.0 / 1024) ** 2
+B_TO_GB = (1.0 / 1024) ** 3
 
 
 @dataclass
@@ -27,7 +29,7 @@ class GpuMetrics:
     memory_total: float
     temperature: float
     power_usage: float
-    processes: str
+    processes: Tuple[GpuProcess, ...]
 
     @classmethod
     def collect(
@@ -50,12 +52,12 @@ class GpuMetrics:
             all_device_metrics.append(
                 GpuMetrics(
                     name=gpu_name,
-                    device_index=index, 
+                    device_index=index,
                     timestamp=max(now, cfg.min_time_interval),
                     pci_tx=tx,
                     pci_rx=rx,
                     utilization=utilization,
-                    memory_used=mem_used / mem_total * 100,
+                    memory_used=mem_used,
                     memory_total=mem_total,
                     temperature=temperature,
                     power_usage=power_usage,
@@ -63,6 +65,10 @@ class GpuMetrics:
                 )
             )
         return tuple(all_device_metrics)
+
+    @property
+    def memory_used_percent(self) -> float:
+        return self.memory_used / self.memory_total * 100
 
     def __repr__(self) -> str:
         return (
@@ -82,26 +88,40 @@ class MetricInterface(Protocol):
     def collect(self) -> Any: ...
 
 
+@dataclass(frozen=True)
+class GpuProcess:
+    pid: str
+    device: int
+    user: str
+    memory: float
+    cpu_usage: float
+    host_memory: float
+    command: str
+
+
 @dataclass
 class GpuComputeRunningProcesses(MetricInterface):
     handle: DeviceHandle
 
-    def collect(self) -> str:
+    def collect(self) -> Tuple[GpuProcess, ...]:
         processes = pynvml.nvmlDeviceGetComputeRunningProcesses(self.handle)
-        processes_text = ""
-        for index, p in enumerate(processes, start=1):
-            pid = p.pid
-            ps = psutil.Process(pid)
-            mem_used_per_process = p.usedGpuMemory / 1024**2
-            if index == 1:
-                processes_text = "PID | Username | Command\n"
-            processes_text += (
-                f"{pid}"
-                f", {ps.username()}"
-                # "({mem_used_per_process/p.memory_total * 100:.0f}%)"
-                f", {ps.name()}\n"
+        gpu_processes = []
+        for p in processes:
+            ps = psutil.Process(p.pid)
+            gpu_processes.append(
+                GpuProcess(
+                    pid=p.pid,
+                    device=int(pynvml.nvmlDeviceGetIndex(self.handle)),
+                    user=ps.username(),
+                    memory=p.usedGpuMemory * B_TO_MB,
+                    command=ps.name(),
+                    cpu_usage=ps.cpu_percent(interval=1.0),
+                    host_memory=ps.memory_info().rss * B_TO_MB,
+                )
             )
-        return processes_text 
+        return tuple(gpu_processes)
+
+
 
 
 @dataclass
@@ -171,4 +191,4 @@ class GpuMemoryMetric(MetricInterface):
         mem_info = pynvml.nvmlDeviceGetMemoryInfo(self.handle)
         mem_used = float(mem_info.used) * KB_TO_GB
         mem_total = float(mem_info.total) * KB_TO_GB
-        return mem_used, mem_total 
+        return mem_used, mem_total
