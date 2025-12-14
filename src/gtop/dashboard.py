@@ -35,11 +35,14 @@ class Dashboard:
         plt.cld()
         plt.theme(cfg.dashboard_theme)
         terminal_size = os.get_terminal_size()
-        # num_processes = len(inputs.last[cfg.device_index].processes) 
+        num_processes = len(inputs.last[cfg.device_index].processes)
 
         plt.subplots(1, 2)
         self._show_device_info(inputs.last, plt, cfg)
-        plt.plotsize(terminal_size[0], terminal_size[1] // 2)
+        plt.plotsize(
+            min(100, terminal_size[0]),
+            min(20, terminal_size[1] // 3 * 2),
+        )
         plt.subplot(1, 1)
         if cfg.dashboard_plot_bar:
             self._bar_plot_utilization(inputs.last, plt, cfg)
@@ -53,7 +56,10 @@ class Dashboard:
         plt.show()
         # ---
         plt.subplots(1, 1)
-        plt.plotsize(terminal_size[0], terminal_size[1] // 2 - 2)
+        plt.plotsize(
+            min(100, terminal_size[0]),
+            max(5, min(5 * num_processes, terminal_size[1] // 3 - 2)),
+        )
         plt.subplot(1, 1)
         self._show_processes(inputs.last, plt, cfg)
         plt.show()
@@ -71,8 +77,7 @@ class Dashboard:
         )
         utilization_values = [input[cfg.device_index].utilization for input in inputs]
         memory_values = [
-            input[cfg.device_index].memory_used_percent
-            for input in inputs
+            input[cfg.device_index].memory_used_percent for input in inputs
         ]
         plt.plot(
             timestamps,
@@ -206,27 +211,27 @@ class Dashboard:
     ) -> None:
         metrics = all_device_metrics[cfg.device_index]
         processes_str = (
-            f"{'PID':<10}"
-            f" {'DEV':<5}"
-            f" {'USER':<10}"
-            f" {'MEM[MB]':<10}"
-            f" {'CPU[%]':<10}"
-            f" {'H-MEM[MB]':<10}"
-            f" {'CMD':<40}"
+            f"{'PID':8}"
+            f" {'DEV':5}"
+            f" {'USER':10}"
+            f" {'MEM[MB]':10}"
+            f" {'CPU[%]':8}"
+            f" {'H-MEM[MB]':10}"
+            f" {'CMD':20}"
             "\n"
         )
         for p in metrics.processes:
             processes_str += (
-                f"{p.pid:<10}"
+                f"{p.pid:<8}"
                 f" {p.device:<5}"
                 f" {p.user:<10}"
                 f" {p.memory:<10.0f}"
-                f" {p.cpu_usage:<10.0f}"
+                f" {p.cpu_usage:<8.0f}"
                 f" {p.host_memory:<10.0f}"
-                f" {p.command:<40}"
+                f" {p.command[:20]:<20}"
                 "\n"
             )
-        plt.text(processes_str, 0, 1)
+        plt.text(processes_str, 0, 1, color="orange")
         plt.xticks([])
         plt.yticks([])
         plt.ylim(0, 1)

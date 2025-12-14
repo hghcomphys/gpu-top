@@ -107,18 +107,21 @@ class GpuComputeRunningProcesses(MetricInterface):
         processes = pynvml.nvmlDeviceGetComputeRunningProcesses(self.handle)
         gpu_processes = []
         for p in processes:
-            ps = psutil.Process(p.pid)
-            gpu_processes.append(
-                GpuProcess(
-                    pid=p.pid,
-                    device=int(pynvml.nvmlDeviceGetIndex(self.handle)),
-                    user=ps.username(),
-                    memory=p.usedGpuMemory * B_TO_MB,
-                    command=ps.name(),
-                    cpu_usage=ps.cpu_percent(interval=1.0),
-                    host_memory=ps.memory_info().rss * B_TO_MB,
+            try:
+                ps = psutil.Process(p.pid)
+                gpu_processes.append(
+                    GpuProcess(
+                        pid=p.pid,
+                        device=int(pynvml.nvmlDeviceGetIndex(self.handle)),
+                        user=ps.username(),
+                        memory=p.usedGpuMemory * B_TO_MB,
+                        command=" ".join(ps.cmdline()),
+                        cpu_usage=ps.cpu_percent(interval=0.1),
+                        host_memory=ps.memory_info().rss * B_TO_MB,
+                    )
                 )
-            )
+            except psutil.NoSuchProcess:
+                continue
         return tuple(gpu_processes)
 
 
