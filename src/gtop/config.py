@@ -7,21 +7,20 @@ from typing import Optional
 import sys
 
 
-GTOPRC = os.path.expanduser("~/.gtoprc")
+GTOPRC = os.path.expanduser("~/.gputoprc")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Config:
-    device_gpu_index: int = 0
-    update_time_interval: float = 1.0
+    buffer_size: int = 30
     text_mode: bool = False
+    device_index: int = 0
+    update_time_interval: float = 1.0
+    min_time_interval: float = 0.1
     generate_config: bool = False
-    collector_buffer_size: int = 30
-    collector_min_time_interval: float = 0.1
-    visualizer_plot_size: Optional[tuple[int, int]] = None
-    visualizer_plot_theme: Optional[str] = "pro"
-    visualizer_plot_marker: Optional[str] = None
-    visualizer_plot_bar: bool = False
+    dashboard_theme: Optional[str] = "pro"
+    dashboard_plot_marker: Optional[str] = None
+    dashboard_plot_bar: bool = False
 
     @classmethod
     def load(cls, path: str) -> Config:
@@ -57,11 +56,11 @@ class Config:
         )
 
     @property
-    def visualizer_plot_time_interval(self) -> float:
-        return self.update_time_interval * self.collector_buffer_size
+    def plot_time_interval(self) -> float:
+        return self.update_time_interval * self.buffer_size
 
 
-def get_config():
+def get_config() -> Config:
     if os.path.exists(GTOPRC):
         return Config.load(GTOPRC)
     else:
