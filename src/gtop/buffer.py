@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 from dataclasses import dataclass, field
-from typing import Any, Iterator, List
+from typing import Iterator, List
 
 T = TypeVar("T")
 
@@ -15,7 +15,7 @@ class Buffer(Generic[T]):
     def append(self, item: T) -> None:
         self._buffer.append(item)
         if len(self._buffer) > self.max_size:
-            self._buffer = self._buffer[-self.max_size :]
+            self._buffer = self._buffer[-self.max_size:]
 
     def __iter__(self) -> Iterator[T]:
         for item in self._buffer:

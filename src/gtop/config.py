@@ -10,7 +10,7 @@ import sys
 GTOPRC = os.path.expanduser("~/.gputoprc")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Config:
     buffer_size: int = 30
     text_mode: bool = False
@@ -60,7 +60,7 @@ class Config:
         return self.update_time_interval * self.buffer_size
 
 
-def get_config():
+def get_config() -> Config:
     if os.path.exists(GTOPRC):
         return Config.load(GTOPRC)
     else:

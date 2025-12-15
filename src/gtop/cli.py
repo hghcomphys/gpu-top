@@ -44,7 +44,7 @@ def main():
         free_devices()
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="A basic CLI tool to Monitor GPU status."
     )
@@ -74,7 +74,6 @@ def parse_arguments():
         action="store_true",
         help="Generate default config '~/.gtoprc' file (default: False)",
     )
-
     return parser.parse_args()
 
 

@@ -17,7 +17,7 @@ B_TO_MB = (1.0 / 1024) ** 2
 B_TO_GB = (1.0 / 1024) ** 3
 
 
-@dataclass
+@dataclass(frozen=True)
 class GpuMetrics:
     name: str
     device_index: int
