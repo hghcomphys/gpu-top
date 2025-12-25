@@ -22,7 +22,6 @@ class Dashboard:
         inputs: Buffer,
         cfg: Config,
     ) -> None:
-
         if len(inputs) < 2:
             return
 
@@ -32,7 +31,7 @@ class Dashboard:
 
         plt = self.plt
         plt.clt()
-        plt.cld()
+        # plt.cld()
         plt.theme(cfg.dashboard_theme)
         terminal_size = os.get_terminal_size()
         num_processes = len(inputs.last[cfg.device_index].processes)
@@ -41,7 +40,7 @@ class Dashboard:
         self._show_device_info(inputs.last, plt, cfg)
         plt.plotsize(
             min(100, terminal_size[0]),
-            min(20, terminal_size[1] // 3 * 2),
+            min(15, terminal_size[1] // 3 * 2),
         )
         plt.subplot(1, 1)
         if cfg.dashboard_plot_bar:
@@ -94,7 +93,7 @@ class Dashboard:
         plt.xlabel("Time (s)")
         plt.ylabel("Utilization (%)")
         plt.ylim(0, 100)
-        plt.xlim(-cfg.plot_time_interval, 0)
+        plt.xlim(-cfg.dashboard_plot_time_interval, 0)
 
     @classmethod
     def _plot_pci_throughput(
@@ -123,7 +122,7 @@ class Dashboard:
         plt.xlabel("Time (s)")
         plt.ylabel("PCI Throughput (MB/s)")
         plt.ylim(0, max(1, max(pci_tx_values + pci_rx_values) * 1.2))
-        plt.xlim(-cfg.plot_time_interval, 0)
+        plt.xlim(-cfg.dashboard_plot_time_interval, 0)
 
     @classmethod
     def _bar_plot_utilization(
@@ -244,9 +243,9 @@ class Dashboard:
         cfg: Config,
     ) -> list[float]:
         timestamps = [
-            time - timestamps[0] - cfg.plot_time_interval for time in timestamps
+            time - timestamps[0] - cfg.dashboard_plot_time_interval for time in timestamps
         ]
-        if len(timestamps) < cfg.buffer_size:
+        if len(timestamps) < cfg.get_buffer_size():
             timestamps = [time - timestamps[-1] for time in timestamps]
         return timestamps
 

@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "gpu-top"
-version = "0.4.0"
+version = "0.5.0"
 description = "A basic command line tool to monitor GPU usage."
 readme = "README.md"
 authors = [{ name = "Hossein Ghorbanfekr", email = "hgh.comphys@gmail.com" }]
