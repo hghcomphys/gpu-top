@@ -1,24 +1,24 @@
 from __future__ import annotations
+
 import json
 import os
-from argparse import Namespace
-from dataclasses import dataclass, asdict
-from typing import Optional
 import sys
-
+from argparse import Namespace
+from dataclasses import asdict, dataclass
+from typing import Optional
 
 GTOPRC = os.path.expanduser("~/.gputoprc")
 
 
 @dataclass(frozen=True)
 class Config:
-    buffer_size: int = 30
-    text_mode: bool = False
     device_index: int = 0
+    text_mode: bool = False
     update_time_interval: float = 1.0
     min_time_interval: float = 0.1
     generate_config: bool = False
     dashboard_theme: Optional[str] = "pro"
+    dashboard_plot_time_interval: float = 30
     dashboard_plot_marker: Optional[str] = None
     dashboard_plot_bar: bool = False
 
@@ -26,6 +26,7 @@ class Config:
     def load(cls, path: str) -> Config:
         with open(path, "r") as f:
             data = json.load(f)
+
         print(f"Loading configuration from '{path}'.")
         return cls(**data)
 
@@ -55,10 +56,8 @@ class Config:
             }
         )
 
-    @property
-    def plot_time_interval(self) -> float:
-        return self.update_time_interval * self.buffer_size
-
+    def get_buffer_size(self) -> int:
+        return int(self.dashboard_plot_time_interval / self.update_time_interval)
 
 def get_config() -> Config:
     if os.path.exists(GTOPRC):

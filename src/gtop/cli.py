@@ -13,14 +13,16 @@ def app(
     cfg: Config,
     stop_event: threading.Event,
 ) -> None:
-    buffer = Buffer(max_size=cfg.buffer_size)
+    buffer = Buffer(max_size=cfg.get_buffer_size())
     visualizer = Dashboard()
     handles = get_devices()
+
     start_time = time.time()
     while not stop_event.is_set():
         all_device_metrics = GpuMetrics.collect(handles, start_time, cfg)
         buffer.append(all_device_metrics)
         visualizer.show(buffer, cfg)
+
         if len(buffer) > 1:
             if stop_event.wait(cfg.update_time_interval):
                 break
@@ -36,7 +38,7 @@ def main():
             # if keyboard.is_pressed('q'):
             #     stop_event.set()
             #     break
-            time.sleep(0.05)
+            time.sleep(0.1)
     except KeyboardInterrupt:
         stop_event.set()
     finally:
@@ -46,7 +48,7 @@ def main():
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="A basic CLI tool to Monitor GPU status."
+        description="A basic CLI tool to Monitor GPU usage."
     )
     parser.add_argument(
         "--device-index",
