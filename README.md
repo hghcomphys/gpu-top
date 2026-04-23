@@ -6,14 +6,6 @@
 A basic command line tool to monitor GPU usage.
 
 <!--
-## Motivation
-Current GPU monitoring tools often fall short in two ways:
-
-* Inflexible metric selection: users should be able to customize which metrics they need to collect, rather than being limited to predefined sets.
-* No PCI throughput metrics: RX and TX metrics are important, as data transfer between CPU and GPU is frequently the computational bottleneck.
--->
-
-<!--
 ## Features
 The following features are planned for this tool:
 
@@ -27,7 +19,12 @@ The following features are planned for this tool:
 
 ## Installation
 
-To install `gpu-top`, run the following command:
+### Via `pip` 
+
+
+Installing `gpu-top` via pip requires an external Python interpreter, either from Conda or a system-wide installation (Python ≥ 3.8).
+
+Run the following command:
 
 ```bash
 pip install --user git+https://github.com/hghcomphys/gpu-top.git
@@ -42,7 +39,29 @@ To uninstall, use the following command:
 pip uninstall gpu-top
 ```
 
-## Example
+
+### Via [Pixi](https://pixi.prefix.dev/latest/) 
+
+First clone the repository 
+
+```bash
+git clone https://github.com/hghcomphys/gpu-top.git
+```
+
+After changing the current directory to `gpu-top`, run
+
+```bash
+pixi install
+```
+
+This command installs `gpu-top` and all required dependencies, including the appropriate Python interpreter, into a project‑local Pixi environment.
+
+To remove the Pixi environment, run `pixi clean`.
+
+
+## Usage
+
+Simply, use the following command:
 
 ```bash
 gtop
@@ -55,7 +74,7 @@ Default device index is 0, but this can be changed via `--device-index` or simpl
 
 ### Text-mode
 
-Text mode (no plot) can be enabled via `--text-mode` or `-t` flag:
+Text mode can be enabled via `--text-mode` or `-t` flag:
 
 ```bash
 gtop -t
@@ -87,4 +106,5 @@ Note: If you remove `~/.gputoprc`, gtop will automatically fall back to the defa
 
 
 ## License
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
