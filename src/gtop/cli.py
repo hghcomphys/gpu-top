@@ -24,7 +24,6 @@ def app(
         all_device_metrics = GpuMetrics.collect(handles, start_time, cfg)
         buffer.append(all_device_metrics)
         visualizer.show(buffer, cfg)
-
         if len(buffer) > 1:
             if stop_event.wait(cfg.update_time_interval):
                 break
@@ -36,7 +35,7 @@ def main():
     thread = threading.Thread(target=app, args=(cfg, stop_event))
     thread.start()
     try:
-        while True:
+        while thread.is_alive():
             # if keyboard.is_pressed('q'):
             #     stop_event.set()
             #     break
@@ -99,3 +98,4 @@ def parse_arguments() -> argparse.Namespace:
 
 if __name__ == "__main__":
     main()
+
