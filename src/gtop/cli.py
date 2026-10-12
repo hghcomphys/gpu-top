@@ -1,4 +1,6 @@
 import argparse
+import os
+import sys
 import threading
 import time
 
@@ -46,16 +48,32 @@ def main():
         free_devices()
 
 
+def get_default_device_index(default_index: int = 0) -> int:
+    visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if not visible_devices:
+        return default_index
+
+    devices = visible_devices.split(",")
+    if len(devices) > 1:
+        print(
+            f"Warning: multiple CUDA_VISIBLE_DEVICES are set ({visible_devices}); "
+            f"using the first device index.",
+            file=sys.stderr,
+        )
+    return int(devices[0])
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="A basic CLI tool to Monitor GPU usage."
     )
+    default_device_index = get_default_device_index()
     parser.add_argument(
         "--device-index",
         "-d",
         type=int,
-        default=0,
-        help="GPU index to monitor (default: 0)",
+        default=default_device_index,
+        help=f"GPU index to monitor (default: {default_device_index})",
     )
     parser.add_argument(
         "--update-time-interval",
